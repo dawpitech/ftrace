@@ -19,6 +19,29 @@
 #include <string.h>
 #include <unistd.h>
 
+#define MAX_CALL_DEPTH 1024
+
+static void trace_func(unsigned char *instr, struct user_regs_struct *regs)
+{
+    static int call_stack_top = -1;
+    static unsigned long call_stack[MAX_CALL_DEPTH];
+
+    if (instr[0] == 0xE8) {
+        int32_t offset;
+        memcpy(&offset, &instr[1], sizeof(offset));
+        unsigned long func_addr = regs->rip + 5 + offset;
+        printf("Entering function 0x%lx at 0x%llx\n", func_addr, regs->rip);
+        if (call_stack_top < MAX_CALL_DEPTH - 1)
+            call_stack[++call_stack_top] = func_addr;
+    }
+    if (instr[0] == 0xC3) {
+        if (call_stack_top >= 0) {
+            unsigned long returning_from = call_stack[call_stack_top--];
+            printf("Returning from function 0x%lx\n", returning_from);
+        }
+    }
+}
+
 int trace_syscalls(pid_t child, args_t *args)
 {
     int status;
@@ -33,6 +56,7 @@ int trace_syscalls(pid_t child, args_t *args)
         instr[1] = (data >> 8) & 0xFF;
         if (maybe_print_syscall(instr, child, args, &regs))
             break;
+	trace_func(instr, &regs);
         ptrace(PTRACE_SINGLESTEP, child, 0, 0);
         waitpid(child, &status, 0);
         if (WIFEXITED(status))
@@ -65,5 +89,7 @@ int main(const int argc, char **argv, char **envp)
         || strcmp(argv[1], "--help") == 0)
         return print_help(), EXIT_FAILURE_TECH;
     strcpy(args.filename, argv[1]);
+    extract_obj(args.filename, &args);
+    return 0;
     return create_process(argv, argc, envp, &args);
 }
