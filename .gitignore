@@ -17,4 +17,5 @@ unit_tests
 \#*
 .#*
 strace
+ftrace
 toto
