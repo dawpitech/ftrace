@@ -66,7 +66,7 @@ static void print_ret(args_t *args, struct user_regs_struct *regs, int tot)
     if (sys != NULL && sys->args[sys->argc] == VOID) {
         printf(" = ?\n");
     } else {
-        printf(" = 0x%X\n", (unsigned int)regs->rax);
+        printf(" = 0x%x\n", (unsigned int)regs->rax);
     }
     fflush(stdout);
 }
