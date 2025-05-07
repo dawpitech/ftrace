@@ -3,9 +3,11 @@
 *.log
 *.gcda
 *.gcno
+*.i64
 libmy.a
 vgcore*
 run
+toto.c
 lingo
 unitests
 values
@@ -18,4 +20,5 @@ unit_tests
 .#*
 strace
 ftrace
+ftrace_ta
 toto
