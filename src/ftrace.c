@@ -58,6 +58,8 @@ static const char *find_function_name(unsigned long addr, mem_map_t **mapptr,
 static void incr_stack(int *call_stack_top, unsigned long *call_stack,
     unsigned long func_addr)
 {
+    if (func_addr == 0)
+        return;
     if (*call_stack_top < MAX_CALL_DEPTH - 1) {
         ++(*call_stack_top);
         call_stack[*call_stack_top] = func_addr;
