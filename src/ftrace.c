@@ -58,10 +58,42 @@ static const char *find_function_name(unsigned long addr, mem_map_t **mapptr,
 static void incr_stack(int *call_stack_top, unsigned long *call_stack,
     unsigned long func_addr)
 {
+    if (func_addr == 0)
+        return;
     if (*call_stack_top < MAX_CALL_DEPTH - 1) {
         ++(*call_stack_top);
         call_stack[*call_stack_top] = func_addr;
     }
+}
+
+static int is_entering_main(module_t *mod, struct user_regs_struct *regs,
+    pid_t pid, unsigned long *func_addr)
+{
+    unsigned long func_addr_ = 0;
+
+    for (size_t j = 0; j < mod->function_count; ++j) {
+        if (strcmp(mod->functions[j].name, "main") != 0)
+            continue;
+        func_addr_ = (unsigned long)mod->functions[j].address +
+            (unsigned long)mod->start;
+        if (func_addr_ != regs->rip)
+            continue;
+        printf("Entering function main at 0x%lx\n",
+            ptrace(PTRACE_PEEKDATA, pid, regs->rsp, NULL));
+        *func_addr = func_addr_;
+        return 1;
+    }
+    return 0;
+}
+
+static int check_for_main(mem_map_t *map, struct user_regs_struct *regs,
+    pid_t pid, unsigned long *func_addr)
+{
+    for (size_t i = 0; i < map->module_count; ++i) {
+        if (is_entering_main(&map->modules[i], regs, pid, func_addr))
+            return 1;
+    }
+    return 0;
 }
 
 static void trace_func(unsigned char *instr, struct user_regs_struct *regs,
@@ -74,19 +106,18 @@ static void trace_func(unsigned char *instr, struct user_regs_struct *regs,
     const char *func_name = NULL;
     unsigned long returning_from = 0;
 
+    if (instr[0] == 0xC3 && call_stack_top >= 0) {
+        returning_from = call_stack[MM(call_stack_top)];
+        func_name = find_function_name(returning_from, map, name_buf, pid);
+        printf("Leaving function %s\n", func_name);
+    }
     if (instr[0] == 0xE8) {
         func_addr = regs->rip + 5 + *(int *)(instr + 1);
         func_name = find_function_name(func_addr, map, name_buf, pid);
         printf("Entering function %s at 0x%llx\n", func_name, regs->rip);
-        incr_stack(&call_stack_top, call_stack, func_addr);
     }
-    if (instr[0] == 0xC3) {
-        if (call_stack_top >= 0) {
-            returning_from = call_stack[MM(call_stack_top)];
-            func_name = find_function_name(returning_from, map, name_buf, pid);
-            printf("Leaving function %s\n", func_name);
-        }
-    }
+    check_for_main(*map, regs, pid, &func_addr);
+    incr_stack(&call_stack_top, call_stack, func_addr);
 }
 
 int trace_syscalls(pid_t child, args_t *args, mem_map_t **map, int *status)
