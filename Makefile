@@ -8,10 +8,11 @@
 SRC =   src/ftrace.c \
 	src/strace.c \
 	src/nm.c \
+	src/public_nm.c \
 	src/cli_args.c
 OBJ = $(SRC:.c=.o)
 NAME = ftrace
-CFLAGS = -Wall -Wextra -Wpedantic -g3
+CFLAGS = -Wall -Wextra -Wpedantic -lelf -g3
 
 all:    $(NAME)
 

@@ -9,8 +9,11 @@
     #define FTRACE_H
 
     #include <linux/limits.h>
+    #include <stddef.h>
     #define MAX_STRING_LEN 512
     #define EXIT_FAILURE_TECH 84
+    #define MAX_CALL_DEPTH 1024
+    #define NAME_BUF_SIZE PATH_MAX + 64
 
 typedef struct syscall_s {
     int id;
