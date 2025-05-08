@@ -23,6 +23,13 @@
 static const char *return_func_name(module_t *mod, unsigned long func_addr,
     unsigned long addr, char *out_buf)
 {
+    for (size_t j = 0; j < mod->function_count; ++j) {
+        func_addr = (unsigned long)mod->functions[j].address +
+            (unsigned long)mod->start;
+        if (func_addr == addr) {
+            return mod->functions[j].name;
+        }
+    }
     snprintf(out_buf, NAME_BUF_SIZE, "func_0x%lx@%s", addr, mod->path);
     return out_buf;
 }
@@ -69,6 +76,9 @@ static int is_entering_got(module_t *mod, struct user_regs_struct *regs,
             (unsigned long)mod->start;
         if (func_addr_ != regs->rip)
             continue;
+        if (strcmp(mod->functions[j].name, "main") != 0 &&
+            strcmp(mod->functions[j].name, "printf") != 0)
+            return 0;
         printf("Entering function %s at 0x%lx\n", mod->functions[j].name,
             ptrace(PTRACE_PEEKDATA, pid, regs->rsp, NULL));
         *func_addr = func_addr_;
