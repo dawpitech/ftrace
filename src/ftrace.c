@@ -23,13 +23,6 @@
 static const char *return_func_name(module_t *mod, unsigned long func_addr,
     unsigned long addr, char *out_buf)
 {
-    for (size_t j = 0; j < mod->function_count; ++j) {
-        func_addr = (unsigned long)mod->functions[j].address +
-            (unsigned long)mod->start;
-        if (func_addr == addr) {
-            return mod->functions[j].name;
-        }
-    }
     snprintf(out_buf, NAME_BUF_SIZE, "func_0x%lx@%s", addr, mod->path);
     return out_buf;
 }
