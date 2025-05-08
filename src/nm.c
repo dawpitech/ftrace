@@ -42,6 +42,8 @@ static void check_sym_name(const char *name, module_t *mod, GElf_Sym sym)
 {
     function_t *func = NULL;
 
+    if (strstr(name, "_IO_") != NULL)
+        return;
     if (name && strlen(name) > 0) {
         mod->functions = realloc(mod->functions,
             sizeof(function_t) * (mod->function_count + 1));
@@ -125,7 +127,8 @@ static void handle_module(int *found, mem_map_t *map, parsed_string_t *parsed)
 void dispatch_mod_operation(parsed_string_t *parsed, mem_map_t *map,
     size_t i, int *found)
 {
-    if (*found && strcmp(parsed->path, map->modules[i].path) == 0) {
+    if (*found && i < map->module_count &&
+        strcmp(parsed->path, map->modules[i].path) == 0) {
         extend_module(map, i, parsed);
         return;
     }
